@@ -6,21 +6,27 @@
             list-style:  none;
         }
         ul.list > li {
-            padding: 5px 10px;
-            border-bottom: 1px solid #777470; 
+            padding: 5px 0;       
         }
     </style>
 {{ end }}
 
 {{ block Page() }} 
     <div class="container grid-lg">
-        <h3>{{ .blog }} <small>| List of your blogs</small></h3>
         
-        <ul class="list">
-        {{ range _ , post := .posts}}
-            <li><a href="/explore/blog/{{post.Blog.Id}}/post/{{post.Id}}"> {{ post.Title }} </a></li>
-        {{ end }}
-        </ul>
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">&nbsp;&nbsp;&nbsp; <b>{{ .blog }}</b> &nbsp;|&nbsp; posts</div>
+                <hr>
+            </div>
+            <div class="panel-body">
+                    <ul class="list">
+                {{ range _ , post := .posts}}
+                    <li><a href="/explore/blog/{{post.Blog.Id}}/post/{{post.Id}}"> {{ post.Title }} </a></li>
+                {{ end }}
+                </ul>
+            </div>
+        </div>
     </div>
 {{ end }}
 
