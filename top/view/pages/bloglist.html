@@ -1,0 +1,27 @@
+{{ extends "../layout/main.html" }}
+
+{{ block Preloader() }}
+<style>
+    ul.list{
+        list-style:  none;
+    }
+    ul.list > li {
+        padding: 5px 10px;
+        border-bottom: 1px solid #777470; 
+    }
+</style>
+{{ end }}
+
+{{ block Page() }}
+    <div class="container grid-lg">
+        <h3>List of your blogs</h3>
+        <ul class="list">
+        {{ range _ , blog := .blogs}}
+            <li><a href="explore/blog/{{blog.Id}}"> {{ blog.Name }} </a></li>
+        {{ end }}
+        </ul>
+    </div>
+{{ end }}
+
+{{ block Postloader() }}
+{{ end }}

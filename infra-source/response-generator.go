@@ -44,10 +44,7 @@ func JSON(w http.ResponseWriter, data interface{}) {
 // View Returns a jet view in response of the in coming request
 // with the data supplied as parameter
 func View(w http.ResponseWriter, r *http.Request, data interface{}, viewName string) {
-	session, err := UserSession.Get(r, "mvc-user-session")
-	if err != nil || session.IsNew {
-		// Just Ignore
-	}
+
 	templateName := viewName
 	t, err := Jet.GetTemplate(templateName)
 	if err != nil {
@@ -61,26 +58,11 @@ func View(w http.ResponseWriter, r *http.Request, data interface{}, viewName str
 	vars := make(jet.VarMap)
 	dataMap["AppUrl"] = Config.AppURL
 	// vars.Set("Auth", "true")
-	if session.Values["auth"] == true {
-		dataMap["Auth"] = true
-		dataMap["Name"] = session.Values["name"]
-		dataMap["NickName"] = session.Values["nickname"]
-		dataMap["Email"] = session.Values["email"]
-		dataMap["ProfilePic"] = session.Values["profile_pic"]
-		dataMap["CoverPic"] = session.Values["cover_pic"]
-		if session.Values["active"] == true {
-			dataMap["Active"] = session.Values["active"]
-		}
-	}
 
-	dataMap["Message"] = session.Values["message"]
 	dataMap["Token"] = csrf.Token(r)
 	dataMap["Url"] = r.URL.Path
-
 	// Resetting the Session Message
-	session.Options.MaxAge = 0
-	session.Values["message"] = nil
-	session.Save(r, w)
+
 	if err = t.Execute(w, vars, dataMap); err != nil {
 		DefaultLogger.Error("Error " + err.Error() + "occured during executing View Render")
 		color.Red(" - respnose-generator.go  View  : %s", err.Error())

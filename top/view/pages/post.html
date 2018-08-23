@@ -1,0 +1,16 @@
+{{ extends "../layout/main.html" }}
+
+{{ block Preloader() }}
+{{ end }}
+
+{{ block Page() }}
+<div class="container grid-lg">
+    <h4>Blog: {{ .blog}}</h4>
+    <desk blogid="{{.blogid}}" postid="{{.postid}}" name="{{.post.Title}}" data="{{.post.Content}}"></desk>
+
+</div>
+{{ end }}
+
+{{ block Postloader() }}
+
+{{ end }}

@@ -22,7 +22,7 @@ window.axios = require('axios');
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded'
-window.axios.defaults.headers.common['X-CSRF-Token'] = $("meta[name=token]").attr("content") ;
+window.axios.defaults.headers.common['X-CSRF-Token'] = document.getElementsByName("csrftoken")[0].getAttribute("value")  ;
 /**
  * Next we will register the CSRF Token as a common header with Axios so that
  * all outgoing HTTP requests automatically have it attached. This is just

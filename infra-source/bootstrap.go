@@ -1,14 +1,14 @@
 package main
 
 import (
-	"os"
-	"github.com/allegro/bigcache"
-	"time"
 	"encoding/json"
-	"github.com/fatih/color"
-	"github.com/boltdb/bolt"
-)
+	"os"
+	"time"
 
+	"github.com/allegro/bigcache"
+	"github.com/boltdb/bolt"
+	"github.com/fatih/color"
+)
 
 // Function that read the config.json file and populates
 //  the Config singleton to use further in the app during
@@ -36,13 +36,13 @@ func loadAppConfig() {
 
 var Db *bolt.DB
 
-func initdb(){
-	if Config.Database.Driver == "boltDB"{
+func initdb() {
+	if Config.Database.Driver == "boltDB" {
 		Db, _ = bolt.Open(Config.Database.DatabaseName, 0600, nil)
-		Db.Update(func(tx *bolt.Tx) error{
-			_,err := tx.CreateBucketIfNotExists([]byte("users"))
+		Db.Update(func(tx *bolt.Tx) error {
+			_, err := tx.CreateBucketIfNotExists([]byte("users"))
 			if err != nil {
-				color.Red(" * Error During Creating Users Bucket :",err.Error())
+				color.Red(" * Error During Creating Users Bucket :", err.Error())
 			}
 			return err
 		})
@@ -73,6 +73,6 @@ func initCache() (*bigcache.BigCache, error) {
 	return bigcache.NewBigCache(config)
 }
 
-func init(){
-	UserSession.Options.HttpOnly = true
+func init() {
+
 }

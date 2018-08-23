@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -79,20 +78,12 @@ func SendMail(template, from, subject, info string, to string, data interface{})
 				color.Red("mail sent with elastic mail")
 				return
 			}
-			resp, errDO := mailClient.Do(req)
+			_, errDO := mailClient.Do(req)
 			if errDO != nil {
 				color.Red("error on do request ", errDO.Error())
 				return
 			}
 
-			respJSON, errReading := ioutil.ReadAll(resp.Body)
-			resp.Body.Close()
-			if errReading != nil {
-				DefaultLogger.Error(fmt.SprinterrReading.Error(), " During reading the Resposne of the elastic mail")
-				return
-			}
-			color.Yellow(string(respJson))
-			color.Green("mail sent with elastic mail")
 		}
 	}
 
