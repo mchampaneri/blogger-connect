@@ -55,13 +55,17 @@ func dynamicRoutes(router *mux.Router) {
 
 		blogPostsService := blogger.NewPostsService(BloggerClient)
 		postsList := blogPostsService.List(vars["id"])
-		getList, err := postsList.Do()
-		if err != nil {
-			fmt.Fprintln(w, err.Error())
-			return
-		}
+		postsList = postsList.View("ADMIN")
+		// getList, err := postsList.Do()
+		// Taking context of current request
+		ctx := r.Context()
+		var posts []*blogger.Post
 		dataMap := make(map[string]interface{})
-		dataMap["posts"] = getList.Items
+		postsList.Pages(ctx, func(postlist *blogger.PostList) error {
+			posts = append(posts, postlist.Items...)
+			return nil
+		})
+		dataMap["posts"] = posts
 		dataMap["blog"] = blog.Name
 		dataMap["blogid"] = vars["id"]
 		View(w, r, dataMap, "pages/postslist.html")
@@ -102,6 +106,7 @@ func dynamicRoutes(router *mux.Router) {
 
 		blogPostsService := blogger.NewPostsService(BloggerClient)
 		getpost := blogPostsService.Get(vars["blogid"], vars["postid"])
+		getpost = getpost.View("ADMIN")
 		post, err := getpost.Do()
 		if err != nil {
 			fmt.Fprintln(w, err.Error())
@@ -114,6 +119,24 @@ func dynamicRoutes(router *mux.Router) {
 		dataMap["postid"] = vars["postid"]
 		View(w, r, dataMap, "pages/post.html")
 
+	})
+
+	router.HandleFunc("/explore/blog/{blogid}/post/delete/{postid}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		if vars["blogid"] == "" || vars["postid"] == "" {
+			fmt.Fprintln(w, "Invalid blogId or postId")
+			return
+		}
+		blogPostsService := blogger.NewPostsService(BloggerClient)
+		deletePost := blogPostsService.Delete(vars["blogid"], vars["postid"])
+		err := deletePost.Do()
+		if err != nil {
+			fmt.Fprintln(w, err.Error())
+			return
+		}
+		redirectToPosts := fmt.Sprint("/explore/blog/", vars["blogid"])
+		http.Redirect(w, r, redirectToPosts, 301)
+		return
 	})
 
 	// Update route for the psot
@@ -140,12 +163,14 @@ func dynamicRoutes(router *mux.Router) {
 			post := &blogger.Post{}
 			post.Content = t.Content
 			post.Title = t.Title
+
 			if t.Postid == "" {
 				postRequest := blogPostsService.Insert(t.Blogid, post)
+				postRequest = postRequest.IsDraft(true)
 				postReturned, insertErr := postRequest.Do()
 				if insertErr != nil {
-					fmt.Fprintln(w, "Faild to patch existing post")
-					color.Red("Error during patch : %s ", insertErr.Error())
+					fmt.Fprintln(w, "Faild to insert new post")
+					color.Red("Error during insertion : %s ", insertErr.Error())
 					return
 				}
 				dataMap := make(map[string]interface{})
@@ -155,6 +180,7 @@ func dynamicRoutes(router *mux.Router) {
 				JSON(w, dataMap)
 			} else {
 				postRequest := blogPostsService.Patch(t.Blogid, t.Postid, post)
+				postRequest = postRequest.Revert(true)
 				postReturned, patcherr := postRequest.Do()
 				if patcherr != nil {
 					fmt.Fprintln(w, "Faild to patch existing post")

@@ -18,15 +18,28 @@
             <div class="panel-header">
                 <div class="panel-title">
                     &nbsp;&nbsp;&nbsp; <b>{{ .blog }}</b> &nbsp;|&nbsp; posts
-                    <div class="float-right"> <a href="/explore/blog/{{.blogid}}/new" class="btn btn-default">New Post</a> </div>
+                    <div class="float-right"> 
+                        <a href="/explore/blog/{{.blogid}}/new" 
+                            class="btn btn-default">
+                            New Post
+                        </a> 
+                    </div>
                     <div class="clearfix"></div>
                 </div>
                 <hr>
             </div>
             <div class="panel-body">
-                    <ul class="list">
+                <ul class="list">
                 {{ range _ , post := .posts}}
-                    <li><a href="/explore/blog/{{post.Blog.Id}}/post/{{post.Id}}"> {{ post.Title }} </a></li>
+                    <li>
+                        <a href="/explore/blog/{{post.Blog.Id}}/post/{{post.Id}}"> 
+                            {{ post.Title }} 
+                        </a>
+                        <a href="/explore/blog/{{post.Blog.Id}}/post/delete/{{post.Id}}"
+                           class="btn danger">
+                            Delete Post
+                        </a>
+                    </li>
                 {{ end }}
                 </ul>
             </div>
