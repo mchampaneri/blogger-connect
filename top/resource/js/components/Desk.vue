@@ -1,7 +1,7 @@
 <template>  
     <div>
         <div class="form-group">
-          <label class="form-label" for="input-example-1">Name</label>
+          <label class="form-label" for="input-example-1">Title of the post</label>
           <input class="form-input" type="text" v-model="title">
         </div>
         <wysiwyg v-model="content" /> 
@@ -14,7 +14,6 @@
 <script>
 export default {
  
-
     props : ["data","name", "blogid","postid"],
 
     mounted(){
@@ -44,12 +43,15 @@ export default {
             }).then((succ)=> {
                 this.content = succ.data.content;
                 this.title = succ.data.title;
+                if (this.postid == ""){
+                      window.location.href ="/explore/blog/"+this.blogid+"/post/"+succ.data.postid
+                }
                 console.log("Opertion done succefully :"+ succ)
             }).catch((err)=>{
                 console.log("Operation failed :"+ err)
             })
         }
-    }
+    },
 
 }
 </script>
