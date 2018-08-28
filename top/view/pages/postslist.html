@@ -29,19 +29,33 @@
                 <hr>
             </div>
             <div class="panel-body">
-                <ul class="list">
-                {{ range _ , post := .posts}}
-                    <li>
-                        <a href="/explore/blog/{{post.Blog.Id}}/post/{{post.Id}}"> 
-                            {{ post.Title }} 
-                        </a>
-                        <a href="/explore/blog/{{post.Blog.Id}}/post/delete/{{post.Id}}"
-                           class="btn danger">
-                            Delete Post
-                        </a>
-                    </li>
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <th>Index</th>
+                        <th>Title</th>
+                        <th>Published on</th>
+                        <th>Views</th>
+                        <th>Action</th>
+                    </thead>
+                {{ range index , post := .posts}}
+                        <tr>
+                            <td> {{ index+1 }}</td>
+                            <td>
+                                <a href="/explore/blog/{{post.Blog.Id}}/post/{{post.Id}}"> 
+                                    {{ post.Title }}
+                                </a>
+                            </td>
+                            <td>{{ post.Published }} </td>
+                            <td></td>
+                            <td>
+                                <a href="/explore/blog/{{post.Blog.Id}}/post/delete/{{post.Id}}"
+                                    class="btn danger">
+                                    Delete Post
+                                 </a>
+                            </td>
+                        </tr>
                 {{ end }}
-                </ul>
+            </table>
             </div>
         </div>
     </div>

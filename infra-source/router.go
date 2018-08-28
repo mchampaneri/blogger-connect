@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
@@ -42,9 +41,9 @@ func RegisterWebRoutes() {
 
 	http.Handle("/", mainrouter)
 
-	logged_router := handlers.LoggingHandler(os.Stdout, mainrouter)
+	// logged_router := handlers.LoggingHandler(os.Stdout, mainrouter)
 	if Config.Env == "dev" {
-		http.ListenAndServe(Config.Port, handlers.CompressHandler(csrf.Protect([]byte("El0a6L8uqv"), csrf.Secure(false))(logged_router)))
+		http.ListenAndServe(Config.Port, handlers.CompressHandler(csrf.Protect([]byte("El0a6L8uqv"), csrf.Secure(false))(mainrouter)))
 	} else if Config.Env == "prod" {
 		http.ListenAndServe(Config.Port, handlers.CompressHandler(csrf.Protect([]byte("El0a6L8uqv"), csrf.Secure(true))(mainrouter)))
 	}

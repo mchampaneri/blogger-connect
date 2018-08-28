@@ -25,11 +25,29 @@ func dynamicRoutes(router *mux.Router) {
 	router.Handle("/gp/login", g2.StateHandler(stateConfig, g2.LoginHandler(GpConf, nil)))
 	router.Handle("/gp/callback", g2.StateHandler(stateConfig, g2.CallbackHandler(GpConf, Social.GPissueSession(), nil)))
 
+	// Clearing gorilla session
+	// created on time on Oauth ....
+	router.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		usersession, err := UserSession.Get(r, "mvc-user-session")
+		if err == nil {
+			for k := range usersession.Values {
+				delete(usersession.Values, k)
+			}
+			usersession.Options.MaxAge = -1
+			usersession.Save(r, w)
+			http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		}
+	})
+
 	// Authenticated userse blog lsit
 	router.HandleFunc("/blogs", func(w http.ResponseWriter, r *http.Request) {
 
+		if IsNotAuthenticated() {
+			http.Redirect(w, r, "/", 301)
+			return
+		}
+
 		userblogservice := blogger.NewBlogsService(BloggerClient)
-		// list := userblogservice.List("self") // for v2
 		list := userblogservice.ListByUser("self")
 		getList, err := list.Do()
 		if err != nil {
@@ -40,10 +58,17 @@ func dynamicRoutes(router *mux.Router) {
 		dataMap := make(map[string]interface{})
 		dataMap["blogs"] = getList.Items
 		View(w, r, dataMap, "pages/bloglist.html")
+
 	})
 
-	// Posts inside the blog
+	// Posts belongs to this blog
 	router.HandleFunc("/explore/blog/{id}", func(w http.ResponseWriter, r *http.Request) {
+
+		if IsNotAuthenticated() {
+			http.Redirect(w, r, "/", 301)
+			return
+		}
+
 		vars := mux.Vars(r)
 		if vars["id"] == "" {
 			fmt.Fprintln(w, "Invalid blog id")
@@ -55,6 +80,7 @@ func dynamicRoutes(router *mux.Router) {
 
 		blogPostsService := blogger.NewPostsService(BloggerClient)
 		postsList := blogPostsService.List(vars["id"])
+
 		postsList = postsList.View("ADMIN")
 		// getList, err := postsList.Do()
 		// Taking context of current request
@@ -72,7 +98,16 @@ func dynamicRoutes(router *mux.Router) {
 	})
 
 	// Insert new post in the blog
+	// Just front end :
+	// Thouhg process of saving is still
+	// exectude by /save/post
 	router.HandleFunc("/explore/blog/{id}/new", func(w http.ResponseWriter, r *http.Request) {
+
+		if IsNotAuthenticated() {
+			http.Redirect(w, r, "/", 301)
+			return
+		}
+
 		vars := mux.Vars(r)
 		if vars["id"] == "" {
 			fmt.Fprintln(w, "Invalid blog id")
@@ -88,12 +123,18 @@ func dynamicRoutes(router *mux.Router) {
 			dataMap["blog"] = blog.Name
 			View(w, r, dataMap, "pages/post.html")
 			return
-
 		}
 
 	})
+
 	// Fetch existing post for the blog
 	router.HandleFunc("/explore/blog/{blogid}/post/{postid}", func(w http.ResponseWriter, r *http.Request) {
+
+		if IsNotAuthenticated() {
+			http.Redirect(w, r, "/", 301)
+			return
+		}
+
 		vars := mux.Vars(r)
 		if vars["blogid"] == "" || vars["postid"] == "" {
 			fmt.Fprintln(w, "Invalid blogId or postId")
@@ -122,6 +163,12 @@ func dynamicRoutes(router *mux.Router) {
 	})
 
 	router.HandleFunc("/explore/blog/{blogid}/post/delete/{postid}", func(w http.ResponseWriter, r *http.Request) {
+
+		if IsNotAuthenticated() {
+			http.Redirect(w, r, "/", 301)
+			return
+		}
+
 		vars := mux.Vars(r)
 		if vars["blogid"] == "" || vars["postid"] == "" {
 			fmt.Fprintln(w, "Invalid blogId or postId")
@@ -141,6 +188,11 @@ func dynamicRoutes(router *mux.Router) {
 
 	// Update route for the psot
 	router.HandleFunc("/save/post", func(w http.ResponseWriter, r *http.Request) {
+
+		if IsNotAuthenticated() {
+			http.Redirect(w, r, "/", 301)
+		}
+
 		if r.Method != "POST" {
 			fmt.Fprintln(w, "Unsupported HTTP method")
 			return
@@ -158,7 +210,6 @@ func dynamicRoutes(router *mux.Router) {
 				return
 			}
 
-			fmt.Println("Data of struct ", t)
 			blogPostsService := blogger.NewPostsService(BloggerClient)
 			post := &blogger.Post{}
 			post.Content = t.Content
@@ -196,4 +247,10 @@ func dynamicRoutes(router *mux.Router) {
 		}
 	})
 
+}
+
+// Just checking if user is authenticated
+// and connection is still alive
+func IsNotAuthenticated() bool {
+	return BloggerClient == nil
 }

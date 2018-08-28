@@ -7,6 +7,7 @@ import (
 
 func main() {
 
+	BloggerClient = nil
 	//Loading the Config
 	loadAppConfig()
 	color.Yellow(" * %s : A Puberstreet Inc. Product ", Config.AppName)

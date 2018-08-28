@@ -48,11 +48,9 @@ func (SocialController) GPissueSession() http.Handler {
 		if errS != nil {
 			fmt.Println(errS.Error(), " during accessing the session")
 		}
-		fmt.Println("google returned this user", gpuser)
 		usersession.Values["AccessToken"] = TokenToUse.AccessToken
 		usersession.Values["RefreshToken"] = TokenToUse.RefreshToken
 		usersession.Values["Id"] = gpuser.Id
-		usersession.Values["Sample"] = "this is the sample"
 		usersession.Save(req, w)
 
 		if err != nil {
