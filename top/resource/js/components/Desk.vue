@@ -55,7 +55,7 @@ export default {
                 postid:this.postid,
                 status:this.statusTouse,
               }).then((succ)=> {
-                this.statusTouse = succ.data.state;              
+                this.statusTouse = succ.data.status;              
                 this.block = false
                 console.log("Opertion done succefully :"+ succ)
             }).catch((err)=>{

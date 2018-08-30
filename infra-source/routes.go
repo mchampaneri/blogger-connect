@@ -316,7 +316,6 @@ func dynamicRoutes(router *mux.Router) {
 				// Rever blog from live status to
 				// draft stage
 				revertBlog := blogPostsService.Revert(t.Blogid, t.Postid)
-				revertBlog = revertBlog.Fields("status")
 				post, revertErr = revertBlog.Do()
 				if revertErr != nil {
 					fmt.Fprintln(w, " Failed to revert blog post")
@@ -325,7 +324,6 @@ func dynamicRoutes(router *mux.Router) {
 
 			} else if t.Status == "DRAFT" {
 				publishBlog := blogPostsService.Publish(t.Blogid, t.Postid)
-				publishBlog = publishBlog.Fields("status")
 				post, publishErr = publishBlog.Do()
 				if publishErr != nil {
 					fmt.Fprintln(w, "Failed to publish blog post")
