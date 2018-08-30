@@ -45,6 +45,8 @@ func JSON(w http.ResponseWriter, data interface{}) {
 // with the data supplied as parameter
 func View(w http.ResponseWriter, r *http.Request, data interface{}, viewName string) {
 
+	usersession, err := UserSession.Get(r, "mvc-user-session")
+
 	templateName := viewName
 	t, err := Jet.GetTemplate(templateName)
 	if err != nil {
@@ -58,7 +60,9 @@ func View(w http.ResponseWriter, r *http.Request, data interface{}, viewName str
 	vars := make(jet.VarMap)
 	dataMap["AppUrl"] = Config.AppURL
 	// vars.Set("Auth", "true")
-
+	if usersession.Values["Valid"] == true {
+		dataMap["Session"] = usersession.Values
+	}
 	dataMap["Token"] = csrf.Token(r)
 	dataMap["Url"] = r.URL.Path
 	// Resetting the Session Message

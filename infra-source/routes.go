@@ -23,6 +23,7 @@ func dynamicRoutes(router *mux.Router) {
 	// Google OAuth Routes
 	// contains login -  callback duo
 	router.Handle("/gp/login", g2.StateHandler(stateConfig, g2.LoginHandler(GpConf, nil)))
+
 	router.Handle("/gp/callback", g2.StateHandler(stateConfig, g2.CallbackHandler(GpConf, Social.GPissueSession(), nil)))
 
 	// Clearing gorilla session
@@ -51,7 +52,7 @@ func dynamicRoutes(router *mux.Router) {
 		list := userblogservice.ListByUser("self")
 		getList, err := list.Do()
 		if err != nil {
-			fmt.Fprintln(w, err.Error())
+			http.Redirect(w, r, "/logout", 301)
 			return
 		}
 
@@ -76,12 +77,17 @@ func dynamicRoutes(router *mux.Router) {
 		}
 		userblogservice := blogger.NewBlogsService(BloggerClient)
 		getBlog := userblogservice.Get(vars["id"])
-		blog, _ := getBlog.Do()
+		blog, err := getBlog.Do()
+		if err != nil {
+			http.Redirect(w, r, "/logout", 301)
+			return
+		}
 
 		blogPostsService := blogger.NewPostsService(BloggerClient)
 		postsList := blogPostsService.List(vars["id"])
 
-		postsList = postsList.View("ADMIN")
+		postsList = postsList.View("ADMIN").Status("draft", "live")
+
 		// getList, err := postsList.Do()
 		// Taking context of current request
 		ctx := r.Context()
@@ -115,7 +121,11 @@ func dynamicRoutes(router *mux.Router) {
 		}
 		userblogservice := blogger.NewBlogsService(BloggerClient)
 		getBlog := userblogservice.Get(vars["id"])
-		blog, _ := getBlog.Do()
+		blog, err := getBlog.Do()
+		if err != nil {
+			http.Redirect(w, r, "/logout", 301)
+			return
+		}
 
 		if r.Method == "GET" {
 			dataMap := make(map[string]interface{})
@@ -143,7 +153,11 @@ func dynamicRoutes(router *mux.Router) {
 
 		userblogservice := blogger.NewBlogsService(BloggerClient)
 		getBlog := userblogservice.Get(vars["blogid"])
-		blog, _ := getBlog.Do()
+		blog, err := getBlog.Do()
+		if err != nil {
+			http.Redirect(w, r, "/logout", 301)
+			return
+		}
 
 		blogPostsService := blogger.NewPostsService(BloggerClient)
 		getpost := blogPostsService.Get(vars["blogid"], vars["postid"])
@@ -178,7 +192,7 @@ func dynamicRoutes(router *mux.Router) {
 		deletePost := blogPostsService.Delete(vars["blogid"], vars["postid"])
 		err := deletePost.Do()
 		if err != nil {
-			fmt.Fprintln(w, err.Error())
+			http.Redirect(w, r, "/logout", 301)
 			return
 		}
 		redirectToPosts := fmt.Sprint("/explore/blog/", vars["blogid"])
@@ -198,24 +212,38 @@ func dynamicRoutes(router *mux.Router) {
 			return
 		} else {
 
+			var updateErr, patchErr error
+			var t *BEditorData
+
 			decoder := json.NewDecoder(r.Body)
-			var t BEditorData
+
 			err := decoder.Decode(&t)
 			if err != nil {
-				panic(err)
+				fmt.Println("Error During Unmarshling ", err.Error())
+				return
 			}
 
+			post := &blogger.Post{}
+			postReturned := &blogger.Post{}
+			post.Content = t.Content
+			post.Title = t.Title
+
 			if t.Blogid == "" {
-				fmt.Fprintln(w, "Blog id  is nil/empty")
+				fmt.Fprintln(w, "blog id is nil/empty")
+				return
+			}
+
+			if err != nil {
+				fmt.Println("failed to get post before updating it", err.Error())
 				return
 			}
 
 			blogPostsService := blogger.NewPostsService(BloggerClient)
-			post := &blogger.Post{}
-			post.Content = t.Content
-			post.Title = t.Title
+
+			// ... When post is new [ literaly ... ]
 
 			if t.Postid == "" {
+
 				postRequest := blogPostsService.Insert(t.Blogid, post)
 				postRequest = postRequest.IsDraft(true)
 				postReturned, insertErr := postRequest.Do()
@@ -229,21 +257,85 @@ func dynamicRoutes(router *mux.Router) {
 				dataMap["postid"] = postReturned.Id
 				dataMap["content"] = postReturned.Content
 				JSON(w, dataMap)
+				return
 			} else {
-				postRequest := blogPostsService.Patch(t.Blogid, t.Postid, post)
-				postRequest = postRequest.Revert(true)
-				postReturned, patcherr := postRequest.Do()
-				if patcherr != nil {
-					fmt.Fprintln(w, "Faild to patch existing post")
-					color.Red("Error during patch : %s ", patcherr.Error())
-					return
+				// When post status is DRAFT we need to
+				// make update call
+				if t.Status == "DRAFT" {
+					getPostCall := blogPostsService.Get(t.Blogid, t.Postid)
+					getPostCall = getPostCall.View("ADMIN")
+					post, err = getPostCall.Do()
+					post.Content = t.Content
+					post.Title = t.Title
+
+					postRequest := blogPostsService.Update(t.Blogid, t.Postid, post)
+					postReturned, updateErr = postRequest.Do()
+					if updateErr != nil {
+						fmt.Fprintln(w, "Faild to update  existing post")
+						color.Red("Error during patch : %s ", updateErr.Error())
+						return
+					}
+				} else if t.Status == "LIVE" {
+					postRequest := blogPostsService.Patch(t.Blogid, t.Postid, post)
+					postReturned, patchErr = postRequest.Do()
+					if patchErr != nil {
+						fmt.Fprintln(w, "Faild to patch existing post")
+						color.Red("Error during patch : %s ", patchErr.Error())
+						return
+					}
+
 				}
+
 				dataMap := make(map[string]interface{})
 				dataMap["title"] = postReturned.Title
 				dataMap["postid"] = postReturned.Id
 				dataMap["content"] = postReturned.Content
 				JSON(w, dataMap)
 			}
+		}
+	})
+
+	router.HandleFunc("/chage-state/post", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			fmt.Fprintln(w, "wrong request method")
+		} else {
+			var t BEditorData
+
+			decoder := json.NewDecoder(r.Body)
+			err := decoder.Decode(&t)
+			if err != nil {
+				fmt.Fprintln(w, " Failed to decode the struct provided by input")
+				return
+			}
+
+			var revertErr, publishErr error
+			post := &blogger.Post{}
+
+			blogPostsService := blogger.NewPostsService(BloggerClient)
+			if t.Status == "LIVE" {
+				// Rever blog from live status to
+				// draft stage
+				revertBlog := blogPostsService.Revert(t.Blogid, t.Postid)
+				revertBlog = revertBlog.Fields("status")
+				post, revertErr = revertBlog.Do()
+				if revertErr != nil {
+					fmt.Fprintln(w, " Failed to revert blog post")
+					return
+				}
+
+			} else if t.Status == "DRAFT" {
+				publishBlog := blogPostsService.Publish(t.Blogid, t.Postid)
+				publishBlog = publishBlog.Fields("status")
+				post, publishErr = publishBlog.Do()
+				if publishErr != nil {
+					fmt.Fprintln(w, "Failed to publish blog post")
+					return
+				}
+			}
+
+			dataMap := make(map[string]string)
+			dataMap["status"] = post.Status
+			JSON(w, dataMap)
 		}
 	})
 

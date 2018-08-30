@@ -4,6 +4,6 @@ type BEditorData struct {
 	Postid,
 	Blogid,
 	Content,
-	Title string
-	isDraft bool
+	Title,
+	Status string
 }

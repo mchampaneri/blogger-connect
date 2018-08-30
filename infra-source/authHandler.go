@@ -48,15 +48,21 @@ func (SocialController) GPissueSession() http.Handler {
 		if errS != nil {
 			fmt.Println(errS.Error(), " during accessing the session")
 		}
+		usersession.Values["Valid"] = true
 		usersession.Values["AccessToken"] = TokenToUse.AccessToken
 		usersession.Values["RefreshToken"] = TokenToUse.RefreshToken
 		usersession.Values["Id"] = gpuser.Id
+		usersession.Values["Email"] = gpuser.Email
+		usersession.Values["Name"] = gpuser.Name
+		usersession.Values["Avatar"] = gpuser.Picture
 		usersession.Save(req, w)
 
 		if err != nil {
 			fmt.Println("Error at issuing the token", err.Error())
 			return
 		}
+
+		fmt.Println("Your access token is ", TokenToUse.AccessToken)
 
 		a := &oauth2.Config{}
 		client := a.Client(ctx, TokenToUse)

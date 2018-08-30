@@ -1,5 +1,10 @@
-<div class="container grid-lg">
+<div class="container grid-lg" style="padding:20px;">
+    <div class="float-left">
+       Hi, <b>{{ .Session.Name }}</b> <br>
+       <i> {{ .Session.Email }}</i>
+    </div>
     <div class="float-right">
+        <a href="/blogs">All Blogs</a> |
         <a href="/logout">Logout</a>
     </div>
     <div class="clearfix"></div>

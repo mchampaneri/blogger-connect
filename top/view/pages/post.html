@@ -7,14 +7,19 @@
 <div class="container grid-lg">
         <div class="panel">
             <div class="panel-header">
-                <div class="panel-title">&nbsp;&nbsp;&nbsp;<b>{{ .blog}}</b>&nbsp;|&nbsp;current blog</div>
+                <div class="panel-title"> 
+                    <a href="/explore/blog/{{.blogid}}">&nbsp;&nbsp;&nbsp;<b>{{ .blog}}</b>&nbsp;</a>
+                    |&nbsp;current blog
+                </div>
                 <hr>
             </div>
             <div class="panel-body">                
                 {{ if isset(.blogid) && isset(.postid) && isset(.post) }}
-                <desk blogid="{{.blogid}}" postid="{{.postid}}" name="{{.post.Title}}" data="{{.post.Content}}"></desk>
+                <desk blogid="{{.blogid}}" postid="{{.postid}}" name="{{.post.Title}}"
+                 data="{{.post.Content}}" status="{{.post.Status}}"></desk>
                 {{ else }}
-                <desk blogid="{{.blogid}}" postid="" name="" data=""></desk>
+                <desk blogid="{{.blogid}}" postid="" name="" data="" 
+                status="DRAFT"></desk>
                 {{ end }}
             </div>
     </div>
