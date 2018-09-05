@@ -23,7 +23,7 @@ var BloggerClient *blogger.Service
 
 var BloggerClientErr error
 
-func init() {
+func gpLoad() {
 
 	GpConf = &oauth2.Config{
 		ClientID:     "545090673153-8be24hfucftsa0a5mkoa58aqn416qlcq.apps.googleusercontent.com",
@@ -32,6 +32,9 @@ func init() {
 		Scopes:       []string{"profile", "email", blogger.BloggerScope},
 		Endpoint:     googleOAuth2.Endpoint,
 	}
+
+	GpConf.RedirectURL = fmt.Sprintf("%s/gp/callback", Config.AppURL)
+	fmt.Println("App url is ", GpConf.RedirectURL)
 }
 
 func (SocialController) GPissueSession() http.Handler {

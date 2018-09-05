@@ -1,7 +1,7 @@
 {
   "Env":"dev",
   "AppName" : "Cobrastack",
-  "AppUrl": "localhost",
+  "AppUrl": "http://localhost:8081",
   "Port":":8081",
   "ViewPath": "view/",
   "StoragePath": "storage/",

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/fatih/color"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -30,7 +32,13 @@ func RegisterWebRoutes() {
 
 	mainrouter.HandleFunc("/favicon.ico", faviconHandler)
 
-	// Loading The Dynamic Routes
+	// for _, page := range StaticPages.Pages {
+	// 	// Loading The Static Routes
+	// 	currRoute := mainrouter.NewRoute()
+	// 	staticPagesLoader(page, currRoute)
+
+	// }
+	// // Loading The Dynamic Routes
 	dynamicRoutes(mainrouter)
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,4 +62,17 @@ func notFoundHandle(w http.ResponseWriter, r *http.Request) {
 }
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./favicon.ico")
+}
+
+func staticPagesLoader(page *Page, nextroute *mux.Route) {
+	color.Yellow(" * Static Routes Loading ")
+
+	color.White(" * [ Static Route: %s - %s ] ", page.URL, page.View)
+
+	nextroute.Path(page.URL)
+	nextroute.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.RequestURI, " ", w.Header(), page.View, page.URL)
+		View(w, r, nil, page.View)
+	})
+	return
 }

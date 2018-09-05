@@ -19,6 +19,7 @@ func dynamicRoutes(router *mux.Router) {
 
 	// Home page
 	router.HandleFunc("/", indexPage)
+	router.HandleFunc("/about", aboutPage)
 
 	// Google OAuth Routes
 	// contains login -  callback duo
@@ -344,3 +345,4 @@ func dynamicRoutes(router *mux.Router) {
 func IsNotAuthenticated() bool {
 	return BloggerClient == nil
 }
+

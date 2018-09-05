@@ -73,6 +73,4 @@ func initCache() (*bigcache.BigCache, error) {
 	return bigcache.NewBigCache(config)
 }
 
-func init() {
 
-}
