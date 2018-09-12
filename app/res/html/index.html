@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <title>Plus: very basic sample</title>
+    <style>
+      @import url(../css/plus-routes.css); /* the only thing needed to include Plus framework */       
+    </style>
+    
+
+      
+      
+      <script type="text/tiscript">
+        
+        function self.ready() {
+          Plus.app.routes = [
+          { path:"/index2", url:"index2.html" },
+          { path:"/auth", url:"auth.html" },
+          ]; 
+        }
+        
+        self << event routechange (evt) {
+          var button = $(toolbar>button[href="{Plus.app.path}"]); 
+          var data = view.NavTo(button.value)
+          stdout.println("response from go ", data)
+        }    
+        
+      </script>
+    </head>
+    
+    <body> <!-- no data model in this sample -->
+      
+      
+      <toolbar>
+        <button(route) href="/index2" checked>Blogs</button>   
+        <button(route) href="/auth" checked>Auth</button>           
+      </toolbar>
+      
+      <main></main>
+
+  </body>
+</html>

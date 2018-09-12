@@ -9,7 +9,7 @@ require('./bootstrap');
 
 window.Vue = require('vue');
 
-import wysiwyg from "vue-wysiwyg";
+// Basic Use - Covers most scenarios
 
 import Croppa from 'vue-croppa';
 
@@ -18,12 +18,6 @@ import BlockUI from 'vue-blockui';
 Vue.use(BlockUI);
 
 Vue.use(Croppa);
-
-Vue.use(wysiwyg, { 
-    hideModules: { "image": true },
-    maxHeight: "500px",
-
-}); // config is optional. more below
 
 Vue.component("Desk",require("./components/Desk.vue"))
 

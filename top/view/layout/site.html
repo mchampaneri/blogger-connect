@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Blogger Editor</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" />
+	<link rel="stylesheet" type="text/css" href="/public/css/app.css">
+
+	<meta charset="UTF-8">
+	<meta name="description" content="Simple editor for google blogger users">
+	<meta name="keywords" content="simpel editor, google blogger">
+	<meta name="author" content="Manish champaneri">
+
+	<meta name="token" value="{{.Token}}">
+		<meta name="google-site-verification" content="8g6c3uBD17TktLaLfOU9DYgXweX2qSYyUwp3xFvqDNI" />
+	<meta name="msvalidate.01" content="FD3D867D04C65B607C2404733A13F85A" />
+    	<meta charset="UTF-8">
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-71252860-9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-71252860-9');
+</script>
+
+<style>
+
+	a.brand{
+		font-style: none;
+		color:#565656;
+		text-decoration: none;
+	}
+
+	ul.nav{
+		list-style:  none;
+		display: inline;
+	}
+
+	ul.nav  li  {
+		display: inline;
+		padding: 0 15px;	
+	}
+
+	ul.nav li a {
+		color:#666;
+	}
+</style>
+
+</head>
+<body>
+
+
+	<div class="heading">
+
+		<div class="container grid-lg ">
+			<!-- <h6 style="text-align:center"><small> 
+					<a href="#" alt="Simple Blogger Editor"> simple google blogger editor </a> alternative </small>
+			</h6>	-->
+
+			<a href="#" style="color:#fff;margin:10px 20px; "><i class="fa fa-th fa-2x"></i></a>
+			<h1 style="text-align:left">
+				<a href="http://www.blogger-editor.xyz" alt="blogger-editor" class="brand">	Blogger  <small> </a> Editor  </small> 
+			</h1>	
+			
+
+			<div style="text-align:center">
+				<ul class="nav" >
+					<li><a href="/" > Home </a></li>
+					<li><a href="/about" > About </a></li>
+					<li><a href="/faq" > FAQ </a></li>
+				</ul>
+			</div>		
+			
+            <hr>
+            {{ yield Page() }}
+			
+		</div>
+	</div>
+
+	
+
+	<script type="text/javascript" src="/public/js/app.js"></script>
+</body>
+</html>

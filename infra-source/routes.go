@@ -20,6 +20,7 @@ func dynamicRoutes(router *mux.Router) {
 	// Home page
 	router.HandleFunc("/", indexPage)
 	router.HandleFunc("/about", aboutPage)
+	router.HandleFunc("/faq", faqPage)
 
 	// Google OAuth Routes
 	// contains login -  callback duo
@@ -242,7 +243,6 @@ func dynamicRoutes(router *mux.Router) {
 			blogPostsService := blogger.NewPostsService(BloggerClient)
 
 			// ... When post is new [ literaly ... ]
-
 			if t.Postid == "" {
 
 				postRequest := blogPostsService.Insert(t.Blogid, post)
@@ -261,7 +261,9 @@ func dynamicRoutes(router *mux.Router) {
 				return
 			} else {
 				// When post status is DRAFT we need to
-				// make update call
+				// make update call becuase patch call is not working
+				// But if post is live then we can do a patch call
+				// .... WTF
 				if t.Status == "DRAFT" {
 					getPostCall := blogPostsService.Get(t.Blogid, t.Postid)
 					getPostCall = getPostCall.View("ADMIN")
@@ -297,10 +299,14 @@ func dynamicRoutes(router *mux.Router) {
 	})
 
 	router.HandleFunc("/chage-state/post", func(w http.ResponseWriter, r *http.Request) {
+
 		if r.Method != "POST" {
 			fmt.Fprintln(w, "wrong request method")
 		} else {
+
 			var t BEditorData
+			var revertErr, publishErr error
+			post := &blogger.Post{}
 
 			decoder := json.NewDecoder(r.Body)
 			err := decoder.Decode(&t)
@@ -308,9 +314,6 @@ func dynamicRoutes(router *mux.Router) {
 				fmt.Fprintln(w, " Failed to decode the struct provided by input")
 				return
 			}
-
-			var revertErr, publishErr error
-			post := &blogger.Post{}
 
 			blogPostsService := blogger.NewPostsService(BloggerClient)
 			if t.Status == "LIVE" {
@@ -345,4 +348,3 @@ func dynamicRoutes(router *mux.Router) {
 func IsNotAuthenticated() bool {
 	return BloggerClient == nil
 }
-

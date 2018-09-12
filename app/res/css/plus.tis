@@ -1,0 +1,645 @@
+
+const Plus = function() {
+                          
+  function thisModel(el) {
+    for(var p = el; p; p = p.parent) {
+      //p.style.display;
+      if(var dr = p.$model) return dr;
+    }
+    return null;
+  }
+  function thisNamespaceModel(el) {
+    for(var p = el; p; p = p.parent) {
+      var dr = p.$model;
+      if(dr && (typeof dr == #namespace || typeof dr == #class)) 
+        return dr;
+    }
+    return null;
+  }
+
+  const reIsExpression=/ *[-()+*&:?|=!^"'\<\>]+ */;
+  const reVarName = /[a-zA-Z_][a-zA-Z0-9_]*/;
+
+  // 'changed()' gets called when coll[key] value has changed (updated or removed)
+  function setupModelChangeHandler(coll,key,changed) 
+  {
+    // data change event handler 
+    function on_model_change(changedef) { 
+      // changedef here is:
+      //[0] - symbol, one of #add,#update,#delete,#add-range,#delete-range or #update-range
+      //[1] - object or vector, its element(s) was changed;
+      //[2] - symbol or string, property name - for objects
+      //      or start of changed range (index) in arrays  
+      //[3] - end of changed range (index, not inclusive) in arrays  
+      if(changedef) switch(changedef[0]) {
+        case #update: if( key == changedef[2] ) changed(coll[key]); break; // object-property
+        case #delete: if( key == changedef[2] ) { changed(undefined); break; } // object-property
+        case #update-range: if( key >= changedef[2] &&  key < changedef[3] ) changed(coll[key]); break; // vector-index
+        case #delete-range: if( key >= changedef[2] &&  key < changedef[3] ) changed(undefined); break; // vector-index
+      }
+    }  
+    // assign it as an observer    
+    Object.addObserver.call(coll,on_model_change); // subscribe to collection object changes
+  }
+  
+  // 'added()' gets called for each new element added to coll
+  function setupModelExpansionHandler(coll, added) 
+  {
+    // setup data object change event handler 
+    function on_model_change(changedef) { 
+      switch(changedef[0]) {
+        case #add:        { added(coll,changedef[2]); } break; 
+        case #add-range:  { var start = changedef[2]; var end = changedef[3]; for(var i = start; i < end; ++i) added(coll,i); } break; 
+      }
+    }      
+    Object.addObserver.call(coll,on_model_change); // subscribe to collection object changes
+  }
+  
+  // 'changed()' is called when coll.length has changed
+  function setupModelLengthChangeHandler(coll, changed) 
+  {
+    // setup data object change event handler 
+    function on_model_change(changedef) { 
+      switch(changedef[0]) {
+        case #add:    case #add-range:
+        case #delete: case #delete-range:  changed(coll.length);  break; 
+      }
+    }      
+    Object.addObserver.call(coll,on_model_change); // subscribe to collection object changes
+  }
+  
+  // 'changed()' is called when coll changes
+  function setupCollectionChangeHandler(coll, changed) 
+  {
+    // setup data object change event handler 
+    function on_model_change(changedef) { changed(); }
+    Object.addObserver.call(coll,on_model_change); // subscribe to collection object changes
+  }
+  
+  
+  // compile expression into function
+  function compileExpr(model, expr) { 
+    var func = new Function("return " + expr); func.namespace = model; return func; 
+  }
+  
+  function setupTerminalBinding(model,thing,path,isInput,updater) 
+  {
+    if( typeof model != #object  && typeof model != #namespace)
+    {
+      stdout.println("Model is not an object while binding ", path);
+      return;      
+    }
+    
+    var (coll,key) = Object.referenceOf(model, path);
+    if( key === null ) {
+      // it cannot be parsed as simple l-value 
+      // try treat it as an expression
+      if(reIsExpression.test(path)) { // looks like an expression, setup it as data observer
+        var parts = path.split(reIsExpression);
+        //stdout.printf("STB %s %V\n", path, parts );        
+        var expr = compileExpr(model,path);
+        for( var part in parts) {
+          if( part.match(reVarName) ) {
+            var (coll,key) = Object.referenceOf(model, part);
+            if(!key) continue;
+            //stdout.printf("setupTerminalBinding, expr part key %s in coll %V\n", key, coll);    
+            if(key == #length) setupModelLengthChangeHandler( coll, function(length) { if( !thing.parent ) throw undefined; updater(thing, expr()); } );
+            else setupModelChangeHandler( coll, key, function(val) { if( !thing.parent ) throw undefined; updater(thing, expr()); } ); 
+          }
+        }
+        thing.post(::updater(thing,expr()));
+      }
+      return;
+    }
+    //stdout.printf("setupTerminalBinding: coll=%s key=%v\n", typeof coll, key);    
+    
+    if( key == #length ) { // special treatment for length computale property
+      setupModelLengthChangeHandler( coll, function(length) { if( !thing.parent ) throw undefined; updater(thing, length); } );
+      updater(thing,coll.length); // intial value
+    } 
+    else { // subscribe to model change notifications:
+      if( isInput ) { // setup DOM change event handler 
+        function on_ui_change(evt) { if(evt.target === this) coll[key] = thing.value; return false; } 
+        thing.subscribe("change.plus",on_ui_change); // subscribe to the element value change event
+      }
+      setupModelChangeHandler( coll, key, function(val) { if( !thing.parent ) throw undefined; updater(thing,val); } );
+      if(thing.attributes["each"]) // if it has each then wee need to update the value after rendering its items
+      {
+        thing.on("set-value-postfactum.plus", function() { 
+          thing.post(::updater(thing,coll[key]));
+          return true; 
+        });
+      } //we need to post this thing as it may have other aspects and behaviors
+      thing.post(::updater(thing,coll[key])); // assign intial value to it;
+    }
+  }
+
+  function valueUpdater(thing,v) 
+  { 
+// if element has custom setBoundValue(val) defined on it - use it
+    var customSetter = thing.setBoundValue;
+    if (typeof customSetter == #function )
+      customSetter.call(thing,v);
+// otherwise use normal thing.value = v assignment.
+// But when the element is in focus we are not updating 
+// it from the model - user is editing it!          
+    else if(!thing.state.focus) 
+      thing.value = v; 
+  }
+  
+ 
+  // setup terminal binding on 'this'
+  function Terminal() {
+    var path = this.@["name"];
+    var thing = this; // the DOM thing
+    var model = /*this.$model ||*/ thisModel(thing);
+    setupTerminalBinding(model,thing,path,thing.tag != #output, valueUpdater ); 
+  }
+  
+  function bindAttributes(model,thing) {
+    assert model : "model shall exist" ;
+
+    function bind(expr, attr) { 
+      assert expr : "it should not be empty";
+      function attrUpdater(thing,v) {
+        thing.post(function() {
+          switch(attr) {
+            case "expanded":
+              thing.state.expanded = !!v; break;
+            case "collapsed":
+              thing.state.collapsed = !!v; break;
+            case "disabled":
+              thing.state.disabled = !!v; break;
+            case "enabled":
+              thing.state.disabled = !v; break;
+            case "readonly":
+              //stdout.println("readonly",!!v);
+              thing.state.readonly = !!v; break;
+            default:
+              thing.@[attr] = v;  
+          }
+        }, true);
+      }
+      setupTerminalBinding(model,thing,expr,false,attrUpdater); 
+    }
+    for( var attr in thing.attributes ) // scan all attributes for "@..." ones:
+    {
+      if( attr !like "@*" ) continue;
+      var expr = thing.attributes[attr];
+      attr = attr.substr(1); // attribute name without '@'
+      bind(expr,attr);
+    }
+  }
+  
+  
+  function rebindSubtree(container, model)
+  {
+    var boundUiElements = container.$$([name]);
+    for(var element in boundUiElements) {
+      element.off(".plus");
+      var path = element.@["name"];
+      setupTerminalBinding(model,element,path,element.tag != #output, valueUpdater);
+    }
+    boundUiElements = container.$$([each]);
+    for(var element in boundUiElements)
+      element.rebind();
+
+    boundUiElements = container.$$(:has-bound-attributes);
+    for(var element in boundUiElements) {
+      bindAttributes(model,element);
+    }    
+  }
+
+  // setup model namespace binding, 'this' is the element
+  function Model() 
+  {
+    var mo = this.@["model"];
+    var pmo = thisModel(this.parent); // parent model
+    if( pmo ) // model inside model
+    {
+      var (coll,key) = Object.referenceOf(pmo, mo);
+      this.$model = coll[key];
+      this.$model.prototype = pmo; // object here behaves as namespace 
+      setupModelChangeHandler( coll, key, function(val) { 
+        assert typeof val == #object || 
+               typeof val == #class  ||
+               typeof val == #namespace : "data model must be an object ";
+        this super.$model = val; 
+        this super.$model.prototype = pmo;
+        rebindSubtree(this super,val);
+      });      
+    }
+    else 
+      this.$model = mo? eval(mo) : self.ns; 
+
+    if(!this.$model) throw "Model {" + mo + "} not found!";
+  }
+    
+  const CLASS_RE = /(.*)\{\{(([-_a-z0-9]+) *\:)? *(.+)\}\}(.*)/i;
+  //const CLASS_RE = /(.*)\{\{([-_a-z0-9]+)(\:)+(.+)\}\}(.*)/i;  
+  
+  function doClassTerminal() {
+    var model = this.$model || thisModel(this);
+    var thing = this; // the DOM thing
+    var classattr = this.@["class"];
+    assert model : "model shall exist" ;
+    assert classattr : "it should not be empty";
+    
+    var parts = classattr.match(CLASS_RE);
+    
+    if( parts[1] /*&& parts[5]*/ )
+      this.@["class"] = parts[1] + " " + (parts[5] || "");
+    else
+      this.@["class"] = undefined;
+    
+    var expr = parts[4];   // expression
+    var cname = parts[3];  // "cls1" if class="{{cls1:expr}}", A case, expr - boolean 
+                           // "" if class="{{expr}}"         , B case, expr - string  
+    var sname = null;      // class name set by B case expr  
+    //stdout.printf("ClassTerminal %V\n", parts); 
+    
+    function classUpdater(thing,v) {
+      thing.post(function() {
+        if( cname )            // case A 
+          thing.@.toggleClass(cname, v || false);  
+        else if( sname != v )  // case B
+          thing.@.removeClass(sname); thing.@.addClass(sname = v);  
+      }, true);
+    }
+    setupTerminalBinding(model,thing,expr,false,classUpdater); 
+  }
+
+  function ClassTerminal() {
+    // due to possible nested templates (demos/F-tree-filtering.htm)
+    // processing needs to be postponed as it modifies @class.
+    this.post(doClassTerminal);
+  }
+  
+  function AttrTerminal(attrname) {
+    var model = this.$model || thisModel(this);
+    var thing = this; // the DOM thing
+    var attrval = this.@[attrname];
+    assert model : "model shall exist" ;
+    assert attrval : "it should not be empty";
+
+    var prefix = attrval ~/ "{{";
+    var expr  = attrval ~% "{{"; // expression part
+    var suffix = expr %~ "}}"; // class name
+    expr = expr /~ "}}";  // everything in between {{...}}
+    //stdout.println("A:", prefix, expr, suffix);
+    
+    function attrUpdater(thing,v) {
+      thing.post(function() {
+          thing.@[attrname] = prefix + v + suffix;  
+      }, true);
+    }
+    setupTerminalBinding(model,thing,expr,false,attrUpdater); 
+  }
+  
+  function boundAttributesTerminal() {
+    var model = this.$model || thisModel(this);
+    var thing = this; // the DOM thing
+    bindAttributes(model,thing);
+  }
+  
+  function crackEachExpression(text) // parse iterator expression: each="[index,]item in collection[|extra]"
+  {
+    const RE = /(([a-z0-9]+)?\,?([a-z0-9]+)?) in ([^|]+)(\|(.+))?/i;  
+    var parts = text.match(RE);
+    if( !parts ) 
+      throw "Unrecognized @each format:" + text;
+   
+    var nindex = parts[2]; // index var name
+    var nitem = parts[3];  // 'item' var name 
+    if( !nitem ) 
+       (nitem,nindex) = (nindex,nitem);
+    var ncoll = parts[4];
+    nitem = symbol(nitem);
+    if(nindex)
+      nindex = symbol(nindex);
+    var filter = parts.length > 6? parts[6]:null;
+    
+    return (ncoll, nitem, nindex, filter);
+  }
+  
+  function eachRecord(rec,idx,filter,elRepeatable) { return true; }
+
+  function functionFilter(rec,idx,filter,elRepeatable) {
+    if( filter.call(elRepeatable,rec, idx) ) 
+      return true;
+    else
+      return false;
+  }
+
+  function objectFilter(rec,idx,filter,elRepeatable) {
+    for(var (k,v) in filter) {
+      var rv = rec[k];
+           if( typeof v == #string ) { if( rv.indexOf(v) < 0 ) return false; }
+      else if( typeof v == #function ) { if( !v(rv) ) return false;   }
+      else if( rv != v ) return false;
+    }
+    return true;
+  }
+  function textFilter(rec,idx,filter,elRepeatable) {
+    for(var (k,v) in rec) {
+      if( typeof v == #string && v.indexOf(filter) < 0 ) return false;
+    }
+    return true;
+  }
+  
+  function Repeater() {
+      var (ncoll, nitem, nindex, filter) = crackEachExpression(this.@["each"]);
+      var root;
+      var hasBoundValue = !!this.attributes["name"];
+      var that = this; 
+      var thing = this.tag == "select"? that.options: that; 
+      var template = thing.first; template.detach();
+      thing.clear();
+      
+      var renderList; // forward declaration
+
+      var ff = eachRecord; // filter function
+      var fs = null;       // filter value
+
+      function rqRenderList() { thing.post(renderList,true); } 
+      var updateCollectionObserves;
+      function rqUpdateCollectionObserves() { thing.post(updateCollectionObserves,true); } 
+
+      function appendRepeatableItem(cont, coll, idx, val, domItemIdx)
+      {
+        var domitem = cont[domItemIdx];
+        if( domitem && domitem.$model) {
+          var elval = domitem.$model[nitem];
+          if( elval === val) {
+            if(nindex && domitem.$model[nindex] != idx) 
+              domitem.$model[nindex] = idx;
+            return; // record already bound with the DOM
+          }  
+          domitem.remove(); 
+          if(elval !== undefined && elval.removeObserver)
+            elval.removeObserver(rqRenderList);
+        }
+        domitem = template.clone();
+        var repeatable_root = {};
+        repeatable_root[nitem] = val; 
+        repeatable_root[ncoll] = coll; 
+        if(nindex) repeatable_root[nindex] = idx; 
+        repeatable_root.prototype = root;// repeatable namespace is derived from parent namespace
+        domitem.$model = repeatable_root; // repeated element is holding local $model now for its descendannts.
+        
+        cont.insert(domitem,domItemIdx);
+       
+        // if something in the record has changed we need to notify list observers
+        if( typeof val == #object && !val.eachObserver( :fun: fun.name == rqUpdateCollectionObserves) )
+          val.addObserver(rqUpdateCollectionObserves);
+      }
+
+      var rcoll, rkey, coll; 
+      
+      updateCollectionObserves = function() { coll.eachObserver( :fun: fun([null,null,null]) ) }
+     
+      renderList = function () {
+        //debug stacktrace;
+        var seqNo = 0;
+        for(var (k,v) in coll)
+          if( ff(v,k,fs,thing) )
+            appendRepeatableItem(thing,coll,k,v,seqNo++);
+     
+        while( thing.length > seqNo ) {
+          var domitem = thing.last;
+          var elval = domitem.$model[nitem]; 
+          if(elval !== undefined && elval.removeObserver)
+            elval.removeObserver(rqRenderList);
+          domitem.remove();          
+        }
+        if(hasBoundValue) // after rendering <select> items we need to reset value to match new options
+          that.postEvent("set-value-postfactum.plus");
+      }
+      
+      function doBind() 
+      {
+        root = thisModel(that);
+
+        (rcoll,rkey) = Object.referenceOf(root, ncoll);
+        coll = rcoll[rkey];
+        if( !coll )
+          return;
+
+        if( filter ) {
+          function updater(thing,val) { 
+            fs = val;
+            if( fs === null || fs === undefined) ff = eachRecord;
+            else if( typeof fs == #function ) ff = functionFilter;
+            else if( typeof fs == #object ) ff = objectFilter;
+            else if( typeof fs == #string ) ff = textFilter;
+            else if( !fs ) throw "Unknown filter " + fs.toString();
+            renderList();
+          }
+          setupTerminalBinding(thisNamespaceModel(thing),thing,filter,false,updater); 
+        }
+        else 
+          renderList();
+
+        // and setup observer for future modifications:
+        setupCollectionChangeHandler(coll, rqRenderList ); 
+        setupModelChangeHandler(rcoll, rkey, function() { 
+           coll = rcoll[rkey];
+           setupCollectionChangeHandler(coll, rqRenderList ); 
+           rqRenderList();
+        });
+      }
+      doBind();
+      this.rebind = doBind;
+  }
+  
+  function handleEvent(target,name, evt) {
+    var model = target.$model || thisModel(target);
+    var action = target.attributes[name];
+    return eval.call(target,action,model);
+  }
+  function handleKeyEvent(target, name, evt) {
+    var code;   
+    switch(name) {
+      case "escape": code = Event.VK_ESCAPE; break;
+      case "enter":  code = Event.VK_RETURN; break;
+      default: return false;
+    }
+    if( evt.keyCode != code ) 
+      return false;
+    var model = target.$model || thisModel(target);
+    var action = target.attributes[name];
+    eval.call(target,action,model);
+    return true;
+  }
+    
+  function Click()    { this.subscribe("click.plus", function(evt) { return handleEvent(this,"click",evt) }) }
+  function DblClick() { this.subscribe("dblclick.plus", function(evt) { return handleEvent(this,"dblclick",evt) }) }
+  
+  function Enter()    { this.subscribe("~keydown.plus", function(evt) { return handleKeyEvent(this,"enter", evt) }) }
+  function Escape()   { this.subscribe("~keydown.plus", function(evt) { return handleKeyEvent(this,"escape", evt) }) }
+  
+  function FocusIn()  { this.subscribe("focusin.plus", function(evt) { return handleEvent(this,"focusin",evt); } ) }
+  function FocusOut() { this.subscribe("focusout.plus", function(evt) { return handleEvent(this,"focusout",evt); } ) }
+  
+  function Change()   { this.subscribe("change.plus", function(evt) { return handleEvent(this,"change",evt); } ) }
+   
+  return {
+    Model:Model,
+    Terminal:Terminal,
+    ClassTerminal:ClassTerminal,
+    AttrTerminal: AttrTerminal,
+    valAttrTerminal: function() { AttrTerminal.call(this,"value"); },
+    hrefAttrTerminal: function() { AttrTerminal.call(this,"href"); },
+    srcAttrTerminal: function() { AttrTerminal.call(this,"src"); },
+    boundAttributesTerminal: boundAttributesTerminal,
+    Repeater:Repeater,
+    Click:Click,
+    DblClick:DblClick,
+    Change:Change,
+    Enter:Enter,
+    Escape:Escape,
+    FocusIn: FocusIn,
+    FocusOut: FocusOut,
+    modelOf: thisModel
+ };
+ 
+}();
+
+
+// the @observing decorator
+// it gets applied to the function willing to be invoked when some data
+// (defined by the path) gets changed
+function @observing(func, paths..) {
+
+  assert typeof this == #namespace;
+  
+  var observeChanges = this[#$observeChanges];
+  if (!observeChanges)
+  {
+    observeChanges = function(obj, onchange, path = "") 
+    {
+      var typ = typeof obj;
+      
+      //stdout.println("observing:", path);
+      if( obj && (typ == #object || typ == #namespace)) {
+        var spath = path? path + "." : "";
+        for(var (k,v) in obj)
+          observeChanges(v, onchange, spath + k);
+      }
+      else if( typ == #array ) {
+        var spath = path + "[]";
+        for(var (k,v) in obj) 
+          observeChanges(v, onchange, spath);
+      }
+      else 
+        return;
+
+      function subs(changedef) {
+        var spath = path? path + "." : "";
+        switch(changedef[0]) {
+            case #add:    
+            case #update: spath = spath + changedef[2]; observeChanges(obj[changedef[2]], onchange, spath); break;
+            case #delete: spath = spath + changedef[2]; break; 
+            case #add-range: 
+            case #update-range:
+            {
+              var start = changedef[2], end = changedef[3];
+              spath = path + "[]";
+              for(var i = start; i < end; ++i)
+                observeChanges(obj[i], onchange, spath);
+            }
+            break;
+            case #delete-range: spath = path + "[]"; break;
+            default: return;
+          }
+        onchange(obj,changedef,spath);
+      }
+          
+      Object.addObserver.call(obj,subs);
+    };
+    
+    function notifier(obj,func,path) { return :: func.call(obj,path); }
+    
+    observeChanges.list = [];
+    observeChanges.purolator = function(obj,changedef,path) {
+      for( var cb in observeChanges.list ) 
+        if( path like cb.path )
+           self.post( notifier(obj,cb.func,path), true);
+    }
+    this[#$observeChanges] = observeChanges;
+    // setup observer on the namespace
+    observeChanges(this,observeChanges.purolator);
+  }
+  
+  var onlyChanges = false;
+  // subscribe
+  for( var path in paths )
+    if( path == #changes )
+      onlyChanges = true;
+    else
+      observeChanges.list.push({path:path,func:func});
+  // invoke it now (if not only changes requested)
+  if(!onlyChanges) 
+    self.post(func, true);
+    
+  return func;
+}
+
+
+// that is an equivalent of jQuery $.extend(deep) method.
+// it merges tree of objects and arrays without recreating exisiting objects
+
+
+function Array.merge(arrays..) 
+{
+  function merge1(receiver,source) {
+    for( var (i,v) in source ) 
+    {
+      if( i < receiver.length ) {
+        var rv = receiver[i];
+        if( typeof v == typeof rv && (typeof rv == #array || typeof rv == #object))
+          rv.merge(v);
+        else 
+          receiver[i] = v;
+      } else
+        receiver.push(v);
+    }
+    if( receiver.length > source.length ) receiver.length = source.length;
+  }
+
+  if(typeof this == #array)
+    for( var arr in arrays ) // called as member function
+      merge1(this,arr);
+  else { 
+    var _this = arrays[0];
+    for( var arr in arrays.slice(1)) // called as static function
+      merge1(_this,arr);
+  }
+}
+
+function Object.merge(objects..) 
+{
+  function merge1(receiver,source) {
+    var rv;
+    for( var (k,v) in source ) 
+    {
+      rv = receiver[k];
+      if( typeof v == typeof rv && (typeof rv == #array || typeof rv == #object))
+        rv.merge(v);
+      else
+        receiver[k] = v;
+    }
+  }
+
+  if(typeof this == #object)
+    for( var obj in objects ) // called as member function
+      merge1(this,obj);
+  else { 
+    var _this = objects[0];
+    for( var obj in objects.slice(1)) // called as static function
+      merge1(_this,obj);
+  }
+}
+
+
+

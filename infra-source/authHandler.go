@@ -28,7 +28,6 @@ func gpLoad() {
 	GpConf = &oauth2.Config{
 		ClientID:     "545090673153-8be24hfucftsa0a5mkoa58aqn416qlcq.apps.googleusercontent.com",
 		ClientSecret: "81lDoXKUW8OU_RkE-PMx1nis",
-		RedirectURL:  "http://localhost:8081/gp/callback",
 		Scopes:       []string{"profile", "email", blogger.BloggerScope},
 		Endpoint:     googleOAuth2.Endpoint,
 	}

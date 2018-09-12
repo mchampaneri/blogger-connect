@@ -1,57 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>Blogger Editor</title>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" />
-	<link rel="stylesheet" type="text/css" href="/public/css/app.css">
-	<meta name="token" value="{{.Token}}">
-		<meta name="google-site-verification" content="8g6c3uBD17TktLaLfOU9DYgXweX2qSYyUwp3xFvqDNI" />
-	<meta name="msvalidate.01" content="FD3D867D04C65B607C2404733A13F85A" />
-    	<meta charset="UTF-8">
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-71252860-9"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+{{ extends "layout/site.html" }}
 
-  gtag('config', 'UA-71252860-9');
-</script>
+{{ block Page() }}
 
-</head>
-<body>
-
-
-	<div class="heading">
-
-		<div class="container grid-lg ">
-
-			<a href="#" style="color:#fff;margin:10px 20px; "><i class="fa fa-th fa-2x"></i></a>
-			<h1 style="text-align:center">Blogger  <small> |Editor  </small> </h1>	
-			<h6 style="text-align:center"><small> <a href="#" alt="Simple Blogger Editor"> simple google blogger editor </a> alternative </small></h6>				
-			
-			<h2 style="text-align: center">Origin</h2>
-			<p>
-                I am using google blogger for quite long time [ almost two and half years ]. It's awesome service that we are getting for free.
-                But it's editor is quite problmatic, it adds <code> &lt;div&gt; and &lt;br&gt;  </code> unexpectldy. So its hard to manage view of 
-                post. 
-            </p>
-            </p>
-                I tried to find online service or products which are giving easy editor like write.as. But don't find any. So, I decided to build one 
-                for me.
-            </p>
-            
-            <h2 style="text-align: center">Ingredients</h2>
-            <p> 
-                Blogger editor is built on top of Blogger API v3, Golang And VueJS. VueJS-wyswyg editor and VueBlock used for UI and editor.
-            </p>       
-
-
-		</div>
+	<div style="margin:20px; text-align: justify;" >
+		<h5 style="text-align: center">Origin</h5>
+		<p>
+            I am using google blogger for quite long time [ almost two and half years ]. It's awesome service that we are getting for free.
+            But it's editor is quite problmatic, it adds <code> &lt;div&gt; and &lt;br&gt;  </code> unexpectldy. So its hard to manage view of 
+            post. 
+        </p>
+        </p>
+            I tried to find online service or products which are giving easy editor like write.as. But don't find any. So, I decided to build one 
+            for me.
+        </p>
+        
+        <h5 style="text-align: center">Ingredients</h5>
+        <p> 
+            Blogger editor is built on top of Blogger API v3, Golang And VueJS. VueJS-wyswyg editor and VueBlock used for UI and editor.
+		</p>       
 	</div>
 
-	
-
-	<script type="text/javascript" src="/public/js/app.js"></script>
-</body>
-</html>
+{{ end }}

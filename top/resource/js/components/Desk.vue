@@ -5,7 +5,7 @@
           <label class="form-label" for="input-example-1">Title of the post</label>
           <input class="form-input" type="text" v-model="title">
         </div>
-        <wysiwyg v-model="content" />  
+        <vue-editor v-model="content" ></vue-editor>
         <div class="form-group">
             <button class="btn btn-default" @click="save()">Save</button>
             <button class="btn btn-danger" @click="state()">{{nextStatus}}</button>
@@ -14,6 +14,9 @@
 </template>
 
 <script>
+    
+import { VueEditor }  from "vue2-editor";
+
 export default {
  
     props : ["data","name", "blogid","postid", "status"],
@@ -23,11 +26,18 @@ export default {
         return this.statusTouse == "DRAFT" ? "LIVE": "DRAFT"
         }
     },
+     
+    components: {
+      VueEditor
+   },
 
     mounted(){
         console.log("desk has been mounted ")
         if (this.data != ""){
-            this.content = this.data
+            var datastring = this.data.toString()
+            var regEx = /<div(\w|[=":;-]|\s?)*>|<\/div>/g;
+            var strippedContent = datastring.replace(regEx, '');
+            this.content = strippedContent
         }
         if (this.name != ""){
             this.title = this.name

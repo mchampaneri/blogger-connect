@@ -87,5 +87,4 @@ func SendMail(template, from, subject, info string, to string, data interface{})
 		}
 	}
 
-	//fmt.Printf("ID: %s Resp: %s\n", id, resp)
 }
