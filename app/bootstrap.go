@@ -21,6 +21,14 @@ func initSciter() {
 
 	// Fetching resource
 	AppWindow.SetResourceArchive(resources)
+
+	// Initilize handle for root element
+	RootElement, RootSelectorErr = AppWindow.GetRootElement()
+	if RootSelectorErr != nil {
+		color.Red("Failed to select root element %s ", RootSelectorErr.Error())
+		return
+	}
+
 	// Registering Callbacks
 	AppWindow.DefineFunction("NavTo", NavTo)
 

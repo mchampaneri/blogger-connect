@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/fatih/color"
 	sciter "github.com/sciter-sdk/go-sciter"
 	blogger "google.golang.org/api/blogger/v3"
@@ -16,29 +14,36 @@ func NavTo(vals ...*sciter.Value) *sciter.Value {
 	for _, val := range vals {
 		switch val.String() {
 		case "Blogs":
-			fmt.Println(fetchBlogs())
-			return fetchBlogs()
+			fetchBlogs()
 		}
 	}
 	return nil
 }
 
 // fethcing blog for authenticate user
-func fetchBlogs() *sciter.Value {
+func fetchBlogs() {
 	if BloggerClient == nil {
-		color.Red("Blogger Client  is not beign initialized ")
-		return nil
+		color.Red("Blogger Client  is not beign initialized")
 	}
+	color.Green("Fetching user's blog list ")
 	userblogservice := blogger.NewBlogsService(BloggerClient)
 	list := userblogservice.ListByUser("self")
 	getList, err := list.Do()
-	if err != nil {
-		store := sciter.NewValue()
-		for index, item := range getList.Items {
-			store.SetIndex(index, item.Name)
+	if err == nil {
+
+		// Instead of returing single elemtns
+		// we are going ot insert dom elements directly
+		// on the screen for ease ...
+		ListItemContainer, ListContainerSelectErr := RootElement.SelectById("#blogslist")
+		if ListContainerSelectErr != nil {
+			color.Red("failed to selected list contaienr %s", ListContainerSelectErr.Error())
+			return
 		}
-		return store
-	} else {
-		return nil
+		for index, item := range getList.Items {
+			currentItem := &sciter.Element{}
+			currentItem.SetHtml(ListItem("list-success", string(index), item.Name), sciter.SOH_INSERT_AFTER)
+			ListItemContainer.Insert(currentItem, index)
+			color.Yellow("element should ne attached")
+		}
 	}
 }

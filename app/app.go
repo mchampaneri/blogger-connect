@@ -6,6 +6,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/fatih/color"
 	"github.com/gorilla/mux"
+	sciter "github.com/sciter-sdk/go-sciter"
 	"github.com/sciter-sdk/window"
 	blogger "google.golang.org/api/blogger/v3"
 )
@@ -15,6 +16,13 @@ import (
 // so it has to be GLOBAL
 var AppWindow *window.Window
 var AppWindowErr error
+
+// Root elements is prime element to
+// manipulate dom [ inserting / deleting / updating dom elements]
+// It needed to initalize once and can be used
+// as singlton
+var RootElement *sciter.Element
+var RootSelectorErr error
 
 // WebServer and routes are going to be
 // gobal as it need to be used anywhere/ every where
@@ -67,6 +75,9 @@ func main() {
 
 	color.Green("Blogger Desktop client initlized")
 	// Show winodw
+	for BloggerClient == nil {
+		// Just wait for Bloggger Client to get initlaized
+	}
 	AppWindow.Show()
 	// Making window runnign
 	AppWindow.Run()
