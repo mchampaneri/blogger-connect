@@ -30,7 +30,6 @@ func fetchBlogs() {
 	list := userblogservice.ListByUser("self")
 	getList, err := list.Do()
 	if err == nil {
-
 		// Instead of returing single elemtns
 		// we are going ot insert dom elements directly
 		// on the screen for ease ...

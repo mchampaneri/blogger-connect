@@ -1,5 +1,9 @@
 package main
 
+// Authentication of user
+// all authentication methods
+// are defined here .......
+
 import (
 	"context"
 	"encoding/json"
@@ -86,7 +90,7 @@ func fetchAndStoreTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 // Using provided token
-// Prepares bloggerClient singlton
+// Prepares bloggerClient singlton ...
 func prepareClient(TokenToUse *oauth2.Token) {
 	ctx := context.Background()
 	a := &oauth2.Config{}

@@ -1,5 +1,9 @@
 package main
 
+// This file contains all elements
+// processor required for preprocessing 
+// input provied by server 
+
 import (
 	"fmt"
 )

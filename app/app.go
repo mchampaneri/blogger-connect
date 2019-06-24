@@ -78,6 +78,7 @@ func main() {
 	for BloggerClient == nil {
 		// Just wait for Bloggger Client to get initlaized
 	}
+
 	AppWindow.Show()
 	// Making window runnign
 	AppWindow.Run()
