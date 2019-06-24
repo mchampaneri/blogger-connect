@@ -1,6 +1,8 @@
 # blogger-connect
 Alternative editor for google blogger
 
+#### Have look at demo deployment on YouTube https://youtu.be/CoXymNBPtV4
+
 ## Setup
 
 ### Download Source code
@@ -31,3 +33,5 @@ func gpLoad() {
 - execute server
 
 ## Done!
+
+##### [www.mchampaneri.in](https://www.mchampaneri.in)
